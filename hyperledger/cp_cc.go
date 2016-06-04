@@ -16,6 +16,11 @@ limitations under the License.
 Licensed Materials - Property of IBM
 © Copyright IBM Corp. 2016
 */
+
+/*
+Viktor: Identity Management Test
+*/
+
 package main
 
 import (
