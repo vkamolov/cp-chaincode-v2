@@ -130,6 +130,17 @@ type Transaction struct {
 
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
 
+    // Initialize the collection of commercial paper keys
+    fmt.Println("Initializing paper keys collection")
+	var blank []string
+	blankBytes, _ := json.Marshal(&blank)
+	err := stub.PutState("PaperKeys", blankBytes)
+    if err != nil {
+        fmt.Println("Failed to initialize paper key collection")
+    }
+
+    /*
+
     // Initialize the collection of person keys
     fmt.Println("Initializing Person keys collection")
 	
@@ -149,6 +160,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
     } else {
         fmt.Println("Found person keyBytes. Will not overwrite keys.")
     }
+    */
 	
 	fmt.Println("Initialization complete")
 	return nil, nil
