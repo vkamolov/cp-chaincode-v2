@@ -36,9 +36,10 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
-var cpPrefix = "cp:"
+var cpPrefix      = "cp:"
 var accountPrefix = "acct:"
-var accountsKey = "accounts"
+var accountsKey   = "accounts"
+var personPrefix  = "pers:" 
 
 var recentLeapYear = 2016
 
@@ -85,10 +86,10 @@ type Person struct {
 	Email			string 	`json:"email"`
 	BirthDate		string 	`json:"birthDate"`
 	Gender			string 	`json:"gender"`
-    Address   		string  `json:"address"`
-    City     		string  `json:"city"`
-    Postcode 		string  `json:"postcode"`
-    State    		string  `json:"state"`
+	Address   		string  `json:"address"`
+	City     		string  `json:"city"`
+	Postcode 		string  `json:"postcode"`
+	State    		string  `json:"state"`
 	Registrator    	string  `json:"registrator"`
 	RegisterDate 	string  `json:"registerDate"`
 }
@@ -128,15 +129,27 @@ type Transaction struct {
 }
 
 func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
-    // Initialize the collection of commercial paper keys
-    fmt.Println("Initializing paper keys collection")
-	var blank []string
-	blankBytes, _ := json.Marshal(&blank)
-	err := stub.PutState("PaperKeys", blankBytes)
-    if err != nil {
-        fmt.Println("Failed to initialize paper key collection")
-    }
 
+    // Initialize the collection of person keys
+    fmt.Println("Initializing Person keys collection")
+	
+    // Check if state already exists
+    fmt.Println("Getting Person Keys")
+    keysBytes, err := stub.GetState("PersKeys")
+    if keysBytes == nil {
+        fmt.Println("Cannot find PersKeys, will reinitialize everything")
+        var blank []string
+        blankBytes, _ := json.Marshal(&blank)
+        err := stub.PutState("PersKeys", blankBytes)
+        if err != nil {
+            fmt.Println("Failed to initialize person key collection")
+        }
+    } else if err != nil {
+         fmt.Println("Failed to initialize person key collection")
+    } else {
+        fmt.Println("Found person keyBytes. Will not overwrite keys.")
+    }
+	
 	fmt.Println("Initialization complete")
 	return nil, nil
 }
@@ -281,112 +294,151 @@ func (t *SimpleChaincode) registerPerson(stub *shim.ChaincodeStub, args []string
     fmt.Println("Person City is: ", person.City)
     fmt.Println("Person Postcode is: ", person.Postcode)
     fmt.Println("Person State is: ", person.State)
+    fmt.Println("Registrator is: ", person.Registrator)
+    fmt.Println("RegisterDate is: ", person.RegisterDate)
 
 
 
-	fmt.Println("Marshalling CP bytes")
-	cp.CUSIP = account.Prefix + suffix
-	
-	fmt.Println("Getting State on CP " + cp.CUSIP)
-	cpRxBytes, err := stub.GetState(cpPrefix+cp.CUSIP)
-	if cpRxBytes == nil {
-		fmt.Println("CUSIP does not exist, creating it")
-		cpBytes, err := json.Marshal(&cp)
+	fmt.Println("Marshalling Person bytes")
+	fmt.Println("Getting State on Person " + person.ID)
+	persRxBytes, err := stub.GetState(personPrefix+person.ID)
+
+	if persRxBytes == nil {
+
+		fmt.Println("ID does not exist, creating it")
+		persBytes, err := json.Marshal(&person)
 		if err != nil {
-			fmt.Println("Error marshalling cp")
-			return nil, errors.New("Error issuing commercial paper")
+			fmt.Println("Error marshalling person")
+			return nil, errors.New("Error registering person")
 		}
-		err = stub.PutState(cpPrefix+cp.CUSIP, cpBytes)
+		err = stub.PutState(personPrefix+person.ID, persBytes)
 		if err != nil {
-			fmt.Println("Error issuing paper")
-			return nil, errors.New("Error issuing commercial paper")
-		}
-
-		fmt.Println("Marshalling account bytes to write")
-		accountBytesToWrite, err := json.Marshal(&account)
-		if err != nil {
-			fmt.Println("Error marshalling account")
-			return nil, errors.New("Error issuing commercial paper")
-		}
-		err = stub.PutState(accountPrefix + cp.Issuer, accountBytesToWrite)
-		if err != nil {
-			fmt.Println("Error putting state on accountBytesToWrite")
-			return nil, errors.New("Error issuing commercial paper")
+			fmt.Println("Error registering person")
+			return nil, errors.New("Error registering person")
 		}
 		
-		
-		// Update the paper keys by adding the new key
-		fmt.Println("Getting Paper Keys")
-		keysBytes, err := stub.GetState("PaperKeys")
+		// Update the person keys by adding the new key
+		fmt.Println("Getting Person Keys")
+		keysBytes, err := stub.GetState("PersKeys")
 		if err != nil {
-			fmt.Println("Error retrieving paper keys")
-			return nil, errors.New("Error retrieving paper keys")
+			fmt.Println("Error retrieving person keys")
+			return nil, errors.New("Error retrieving person keys")
 		}
 		var keys []string
 		err = json.Unmarshal(keysBytes, &keys)
 		if err != nil {
 			fmt.Println("Error unmarshel keys")
-			return nil, errors.New("Error unmarshalling paper keys ")
+			return nil, errors.New("Error unmarshalling person keys ")
 		}
 		
-		fmt.Println("Appending the new key to Paper Keys")
+		fmt.Println("Appending the new key to Person Keys")
 		foundKey := false
 		for _, key := range keys {
-			if key == cpPrefix+cp.CUSIP {
+			if key == personPrefix+person.ID {
 				foundKey = true
 			}
 		}
 		if foundKey == false {
-			keys = append(keys, cpPrefix+cp.CUSIP)
+			keys = append(keys, personPrefix+person.ID)
 			keysBytesToWrite, err := json.Marshal(&keys)
 			if err != nil {
 				fmt.Println("Error marshalling keys")
 				return nil, errors.New("Error marshalling the keys")
 			}
-			fmt.Println("Put state on PaperKeys")
-			err = stub.PutState("PaperKeys", keysBytesToWrite)
+			fmt.Println("Put state on PersKeys")
+			err = stub.PutState("PersKeys", keysBytesToWrite)
 			if err != nil {
 				fmt.Println("Error writting keys back")
 				return nil, errors.New("Error writing the keys back")
 			}
 		}
 		
-		fmt.Println("Issue commercial paper %+v\n", cp)
+		fmt.Println("Register person %+v\n", person)
 		return nil, nil
+
 	} else {
-		fmt.Println("CUSIP exists")
+
 		
-		var cprx CP
-		fmt.Println("Unmarshalling CP " + cp.CUSIP)
-		err = json.Unmarshal(cpRxBytes, &cprx)
+		fmt.Println("You can't create a person which already exists")
+        return nil, errors.New("Can't a person which already exists")
+
+        //Use for updating??
+		fmt.Println("Person ID exists")
+		
+		var personRx Person
+		fmt.Println("Unmarshalling Person " + person.ID)
+		err = json.Unmarshal(persRxBytes, &personRx)
 		if err != nil {
-			fmt.Println("Error unmarshalling cp " + cp.CUSIP)
-			return nil, errors.New("Error unmarshalling cp " + cp.CUSIP)
+			fmt.Println("Error unmarshalling person " + person.ID)
+			return nil, errors.New("Error unmarshalling person " + person.ID)
 		}
 		
-		cprx.Qty = cprx.Qty + cp.Qty
-		
-		for key, val := range cprx.Owners {
-			if val.Company == cp.Issuer {
-				cprx.Owners[key].Quantity += cp.Qty
-				break
-			}
-		}
-				
-		cpWriteBytes, err := json.Marshal(&cprx)
+		personRx.Address = person.Address
+						
+		persWriteBytes, err := json.Marshal(&personRx)
 		if err != nil {
-			fmt.Println("Error marshalling cp")
-			return nil, errors.New("Error issuing commercial paper")
+			fmt.Println("Error marshalling person")
+			return nil, errors.New("Error registering a person")
 		}
-		err = stub.PutState(cpPrefix+cp.CUSIP, cpWriteBytes)
+		err = stub.PutState(personPrefix+person.ID, persWriteBytes)
 		if err != nil {
-			fmt.Println("Error issuing paper")
-			return nil, errors.New("Error issuing commercial paper")
+			fmt.Println("Error registering person")
+			return nil, errors.New("Error registering person")
 		}
 
-		fmt.Println("Updated commercial paper %+v\n", cprx)
+		fmt.Println("Updated person %+v\n", personRx)
 		return nil, nil
 	}
+}
+
+func GetAllPersons(stub *shim.ChaincodeStub) ([]Person, error){
+    
+    var allPersons []Person
+    
+    // Get list of all the keys
+    keysBytes, err := stub.GetState("PersKeys")
+    if err != nil {
+        fmt.Println("Error retrieving Person keys")
+        return nil, errors.New("Error retrieving Person keys")
+    }
+    var keys []string
+    err = json.Unmarshal(keysBytes, &keys)
+    if err != nil {
+        fmt.Println("Error unmarshalling Person keys")
+        return nil, errors.New("Error unmarshalling Person keys")
+    }
+
+    // Get all the persons
+    for _, value := range keys {
+        persBytes, err := stub.GetState(value)
+        
+        var person Person
+        err = json.Unmarshal(persBytes, &person)
+        if err != nil {
+            fmt.Println("Error retrieving person " + value)
+            return nil, errors.New("Error retrieving person " + value)
+        }
+        
+        fmt.Println("Appending Person" + value)
+        allPersons = append(allPersons, person)
+    }   
+    
+    return allPersons, nil
+}
+
+func GetPerson(personId string, stub *shim.ChaincodeStub) (Person, error){
+    
+    //
+    persBytes, err := stub.GetState(personPrefix+personId)
+    
+    var person Person
+    err = json.Unmarshal(persBytes, &person)
+    if err != nil {
+        fmt.Println("Error retrieving person " + personId)
+        return person, errors.New("Error retrieving cp " + personId)
+    }
+    
+    return person, nil
 }
 /******* ID-Man *********************/
 
@@ -859,6 +911,36 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 			fmt.Println("All success, returning the cp")
 			return cpBytes, nil		 
 		}
+	} else if args[0] == "GetAllPersons" {
+		fmt.Println("Getting all Persons")
+		allPersons, err := GetAllPersons(stub)
+		if err != nil {
+			fmt.Println("Error from GetAllPersons")
+			return nil, err
+		} else {
+			allPersonsBytes, err1 := json.Marshal(&allPersons)
+			if err1 != nil {
+				fmt.Println("Error marshalling allPersons")
+				return nil, err1
+			}	
+			fmt.Println("All success, returning allPersons")
+			return allPersonsBytes, nil		 
+		}
+	} else if args[0] == "GetPerson" {
+		fmt.Println("Getting particular person")
+		person, err := GetPerson(args[1], stub)
+		if err != nil {
+			fmt.Println("Error Getting particular person")
+			return nil, err
+		} else {
+			personBytes, err1 := json.Marshal(&person)
+			if err1 != nil {
+				fmt.Println("Error marshalling the person")
+				return nil, err1
+			}	
+			fmt.Println("All success, returning the person")
+			return personBytes, nil		 
+		}	
 	} else if args[0] == "GetCompany" {
 		fmt.Println("Getting the company")
 		company, err := GetCompany(args[1], stub)
@@ -900,9 +982,12 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		fmt.Println("Firing issueCommercialPaper")
 		//Create an asset with some value
 		return t.issueCommercialPaper(stub, args)
+	} else if function == "registerPerson" {
+        //Create a Person
+        return t.registerPerson(stub, args)	
 	} else if function == "transferPaper" {
 		fmt.Println("Firing cretransferPaperateAccounts")
-		return t.transferPaper(stub, args)
+		return t.transferPaper(stub, args)	
 	} else if function == "createAccounts" {
 		fmt.Println("Firing createAccounts")
 		return t.createAccounts(stub, args)
