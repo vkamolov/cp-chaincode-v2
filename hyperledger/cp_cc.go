@@ -80,7 +80,7 @@ func msToTime(ms string) (time.Time, error) {
 
 /************* ID-Man **************************/
 type Person struct {
-	ID        		string  `json:"id"`
+	ID				string  `json:"id"`
 	FirstName		string 	`json:"firstName"`
 	LastName		string 	`json:"lastName"`
 	Email			string 	`json:"email"`
@@ -264,8 +264,6 @@ func (t *SimpleChaincode) createAccount(stub *shim.ChaincodeStub, args []string)
         }
         
     }
-    
-    
 }
 
 /******* ID-Man *********************/
@@ -402,6 +400,7 @@ func (t *SimpleChaincode) registerPerson(stub *shim.ChaincodeStub, args []string
 		return nil, nil
 	}
 }
+
 
 func GetAllPersons(stub *shim.ChaincodeStub) ([]Person, error){
     
@@ -979,7 +978,7 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 
 		fmt.Println("All success, returning from generic")
 		return bytes, nil		
-	}
+	} 
 }
 
 func (t *SimpleChaincode) Run(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
