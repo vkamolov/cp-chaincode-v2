@@ -79,6 +79,7 @@ func msToTime(ms string) (time.Time, error) {
 }
 
 /************* ID-Man **************************/
+/*
 type Person struct {
 	ID				string  `json:"id"`
 	FirstName		string 	`json:"firstName"`
@@ -93,6 +94,7 @@ type Person struct {
 	Registrator    	string  `json:"registrator"`
 	RegisterDate 	string  `json:"registerDate"`
 }
+*/
 /************* ID-Man **************************/
 
 
@@ -267,6 +269,7 @@ func (t *SimpleChaincode) createAccount(stub *shim.ChaincodeStub, args []string)
 }
 
 /******* ID-Man *********************/
+/*
 func (t *SimpleChaincode) registerPerson(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 
 	//need one arg
@@ -451,6 +454,7 @@ func GetPerson(personId string, stub *shim.ChaincodeStub) (Person, error){
     
     return person, nil
 }
+*/
 /******* ID-Man *********************/
 
 
@@ -922,6 +926,7 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 			fmt.Println("All success, returning the cp")
 			return cpBytes, nil		 
 		}
+	/*	
 	} else if args[0] == "GetAllPersons" {
 		fmt.Println("Getting all Persons")
 		allPersons, err := GetAllPersons(stub)
@@ -937,6 +942,7 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 			fmt.Println("All success, returning allPersons")
 			return allPersonsBytes, nil		 
 		}
+
 	} else if args[0] == "GetPerson" {
 		fmt.Println("Getting particular person")
 		person, err := GetPerson(args[1], stub)
@@ -952,6 +958,7 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 			fmt.Println("All success, returning the person")
 			return personBytes, nil		 
 		}	
+	*/
 	} else if args[0] == "GetCompany" {
 		fmt.Println("Getting the company")
 		company, err := GetCompany(args[1], stub)
@@ -993,9 +1000,11 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		fmt.Println("Firing issueCommercialPaper")
 		//Create an asset with some value
 		return t.issueCommercialPaper(stub, args)
+	/*	
 	} else if function == "registerPerson" {
         //Create a Person
         return t.registerPerson(stub, args)	
+    */    
 	} else if function == "transferPaper" {
 		fmt.Println("Firing cretransferPaperateAccounts")
 		return t.transferPaper(stub, args)	
